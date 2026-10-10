@@ -1,5 +1,8 @@
 name: resign_v3
 
+permissions:
+contents: write
+
 on:
   workflow_dispatch:
     inputs:
