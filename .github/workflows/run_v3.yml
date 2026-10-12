@@ -6,7 +6,7 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
-      ZIP_URL:
+      ZIP_URL:    
         description: 'URL of (splloader)+uboot+sml+trustos+(teecfg)+vbmeta+boot+(recovery) (all end with .bin)'
         required: true
         default: ''
@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
+    
     - name: Checkout
       uses: actions/checkout@v7
       with:
@@ -52,11 +52,16 @@ jobs:
       run: |
         sudo apt update
         sudo apt -y install build-essential openssl curl wget busybox xz-utils python3
+        # install static 7zz used by the scripts instead of busybox unzip:
+        # latest official ip7z/7zip linux-x64 release (resolved via GitHub API),
+        # falling back to the mcmilk/7-Zip-zstd nightly linux-clang-x64 build
         chmod +x main/setup-7zz.sh
         ./main/setup-7zz.sh
+        # build avbctl, the static C replacement for the python2 avbtool
+        # (fetches mbedtls-3.6 and links it statically)
         make -C main/avbctl
         curl -o original.zip -L "${{ github.event.inputs.ZIP_URL }}"
-        curl -o magisk.apk -L $(curl -s https://api.github.com/repos/topjohnwu/Magisk/releases | grep -Po -m 1 (?<=download_url\"\: \").*Magisk.*Magisk.*apk)
+        curl -o magisk.apk -L $(curl -s https://api.github.com/repos/topjohnwu/Magisk/releases | grep -Po -m 1 '(?<=download_url\"\: \").*Magisk.*Magisk.*apk')
         wget https://raw.githubusercontent.com/magojohnji/magiskboot-linux/main/x86_64/magiskboot
         chmod +x magiskboot
         chmod +x main/*.sh
@@ -77,10 +82,10 @@ jobs:
         retention-days: 30
 
     - name: Upload to Release
-      if: ${{ !contains(github.event.repository.fork, true) }}
+      if: ${{ !contains(github.event.repository.fork, 'true') }}
       uses: softprops/action-gh-release@v3
       with:
-        files: |
+        files: | 
           resigned.zip
         name: ${{ github.run_id }}
         tag_name: ${{ github.run_id }}
